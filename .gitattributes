@@ -1,0 +1,2 @@
+*.csv filter=lfs diff=lfs merge=lfs -text
+data/Planning_Application_Points.csv filter=lfs diff=lfs merge=lfs -text
