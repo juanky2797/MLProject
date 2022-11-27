@@ -17,7 +17,6 @@ import random
 
 pd.set_option('display.max_columns', None)
 
-<<<<<<< HEAD
 #read dataset
 df = pd.read_csv('data/application_including_boundary_data.csv',encoding='latin-1', low_memory=False)
 
@@ -71,7 +70,6 @@ df = df.set_index('OBJECTID')
 
 
 #print(df.loc[50548])
-=======
 to_drop = ['ApplicantForename','ApplicantSurname','ApplicantAddress','OBJECTID', 'AppealRefNumber', 'ApplicationNumber',
            'DevelopmentDescription','GrantDate','ExpiryDate','AppealStatus','AppealDecision','AppealDecision',
            'AppealDecision', 'FIRequestDate','FIRecDate','LinkAppDetails','ETL_DATE','SiteId','ORIG_FID',
@@ -264,7 +262,6 @@ df_filtered[['Decision']] = df_filtered[['Decision']].replace('Invalid Applicati
 
 
 
->>>>>>> 499a6c157f35f6f496359d3bef58b38c57d1a6a2
 
 #date = datetime.date(df['ReceivedDate'])
 
