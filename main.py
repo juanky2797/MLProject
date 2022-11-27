@@ -5,6 +5,7 @@ import datetime
 
 import matplotlib
 import pandas as pd
+pd.options.mode.chained_assignment = None  # default='warn'
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
@@ -12,6 +13,7 @@ import numpy as np
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn import linear_model
 import random
+import seaborn as sns
 
 
 
@@ -24,43 +26,11 @@ df = pd.read_csv('data/application_including_boundary_data.csv',encoding='latin-
 
 
 #So we can drop these columns in the following way
-to_drop = [
-           'ApplicationNumber',
-           'DevelopmentDescription',
-           'ApplicationNumber',
-           'DevelopmentDescription',
-           'DevelopmentAddress',
-           'DevelopmentPostcode',
-           'ITMEasting',
-           'ITMNorthing',
-           'ApplicationStatus',
-           'ApplicantForename',
-           'ApplicantSurname',
-           'ApplicantAddress',
-           'LandUseCode',
-           'WithdrawnDate',
-           'DecisionDate',
-           'DecisionDueDate',
-           'GrantDate',
-           'ExpiryDate',
-           'AppealRefNumber',
-           'AppealStatus',
-           'AppealDecision',
-           'AppealDecisionDate',
-           'AppealSubmittedDate',
-           'FIRequestDate',
-           'FIRecDate',
-           'LinkAppDetails',
-           'ETL_DATE',
-           'OneOffKPI',
-           'SiteId',
-           'ORIG_FID']
 
-df.drop(to_drop, inplace=True, axis=1)
+
 
 #Above, we defined a list that contains the names of all the columns we want to drop. Next, we call the drop() function on our object passing in the inplace parameter as True and the axis parameter as 1. This tells Pandas that we want the changes to be made directly in our object and that it should look for the values to be dropped in the columns of the object.
 
-df = df.set_index('OBJECTID')
 
 #print(df['OBJECTID'].is_unique)
 
@@ -73,7 +43,7 @@ df = df.set_index('OBJECTID')
 to_drop = ['ApplicantForename','ApplicantSurname','ApplicantAddress','OBJECTID', 'AppealRefNumber', 'ApplicationNumber',
            'DevelopmentDescription','GrantDate','ExpiryDate','AppealStatus','AppealDecision','AppealDecision',
            'AppealDecision', 'FIRequestDate','FIRecDate','LinkAppDetails','ETL_DATE','SiteId','ORIG_FID',
-           'DecisionDueDate','WithdrawnDate','DecisionDate','AppealSubmittedDate','AppealDecisionDate']
+           'DecisionDueDate','WithdrawnDate','DecisionDate','AppealSubmittedDate','AppealDecisionDate','ITMEasting','ITMEasting','DevelopmentPostcode','ApplicationStatus','ApplicationType','ITMNorthing','LandUseCode','Cities_and_Suburbs']
 
 df_dropped = df.drop(to_drop,axis=1)
 
@@ -83,13 +53,27 @@ df_dropped = df_dropped[df_dropped.ReceivedDate != '3185/10/01 00:00:00+00'] # t
 df_dropped['date']=pd.to_datetime(df_dropped['ReceivedDate'], format='%Y/%m/%d %H:%M:%S+00')
 
 # removing unnecessary receivedDate column
-df_dropped = df_dropped.drop(['receivedDate'],axis=1)
+#df_dropped = df_dropped.drop(['data'],axis=1)
 
 # filter by dates
 df_filtered = df_dropped[(df_dropped['date'] > '2017-01-01') & (df_dropped['date'] < '2022-10-01')]
 
 # Replacing nan values with 'BLANK' string (i can't seem to get it to otherwise remove the nan values)
-df_filtered[['Decision']] = df_filtered[['Decision']].replace(float('nan'),'BLANK')
+#df_filtered[['Decision']] = df_filtered[['Decision']].replace(float('nan'),'BLANK')
+#print(df_filtered.shape)
+df_filtered[['Metropolitian_Areas']] = df_filtered[['Metropolitian_Areas']].replace('character(0)',np.nan)
+df_filtered[['Key_Growth_Areas']] = df_filtered[['Key_Growth_Areas']].replace('character(0)',np.nan)
+#df_filtered[['Cities_and_Suburbs']] = df_filtered[['Cities_and_Suburbs']].replace('character(0)',np.nan)
+
+
+
+
+#remove NaN and null values
+df_filtered = df_filtered.dropna(subset=['Decision','AreaofSite','NumResidentialUnits','OneOffHouse','FloorArea','OneOffKPI','Metropolitian_Areas','Key_Growth_Areas',])
+#print(df_filtered.shape)
+
+
+#print(df_filtered)
 
 # Removing rows with decison values that are in conclusive
 df_filtered = df_filtered[df_filtered['Decision'] != 'BLANK']
@@ -233,59 +217,26 @@ df_filtered[['Decision']] = df_filtered[['Decision']].replace('CANNOT DETERMINE'
 df_filtered[['Decision']] = df_filtered[['Decision']].replace('DECLARE APPLICATION INVALID','Granted')
 df_filtered[['Decision']] = df_filtered[['Decision']].replace('Invalid Application (site notice)','Granted')
 
+#print(df_filtered.isnull().sum())
 
 
+print(df_filtered.shape)
 
 
+#Investigate all the elements within each Feature
 
+g = sns.pairplot(df_filtered)
 
+for column in df_filtered:
+    unique_values = np.unique(df_filtered[column])
+    nr_values = len(unique_values)
+    if nr_values < 10:
+        print("The number of values for feature {} is: {} -- {}".format(column,nr_values,unique_values))
+    else:
+        print("The number of values for feature {} is: {}".format(column,nr_values))
 
+plt.show()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#date = datetime.date(df['ReceivedDate'])
-
-print(df['ReceivedDate'].dtype)
-
-#Parse RecievedDate data to datetime
-df['ReceivedDate'] = pd.to_datetime(df['ReceivedDate'], errors='coerce')
-
-#Filter data between 2017 and 2022
-df = df[(df['ReceivedDate'] > '2017-01-01') & (df['ReceivedDate'] < '2022-10-01')]
-
-
-#Exploratory Data Analysis
-# Checking for null values
-
-#print(df.shape)
-
-#delete NaN and null values
-df = df.dropna(subset=['Decision','AreaofSite','NumResidentialUnits','OneOffHouse','FloorArea','ApplicationType'])
-
-
-#print(df.isnull().sum())
-
-#print(df)
 
 
 
