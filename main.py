@@ -13,8 +13,6 @@ from sklearn.preprocessing import PolynomialFeatures
 from sklearn import linear_model
 import random
 
-
-
 pd.set_option('display.max_columns', None)
 
 #read dataset
@@ -22,12 +20,11 @@ df = pd.read_csv('data/application_including_boundary_data.csv',encoding='latin-
 
 #When we see some columns of the data set we can see that there are columns that are not very useful to use as features
 
-
 #So we can drop these columns in the following way
-to_drop = ['ApplicationNumber',
+to_drop = ['Unnamed: 0',
            'DevelopmentDescription',
            'ApplicationNumber',
-           'DevelopmentDescription',
+           'ApplicationNumber',
            'DevelopmentAddress',
            'DevelopmentPostcode',
            'ITMEasting',
@@ -37,8 +34,8 @@ to_drop = ['ApplicationNumber',
            'ApplicantSurname',
            'ApplicantAddress',
            'LandUseCode',
+           'ReceivedDate',
            'WithdrawnDate',
-           'DecisionDate',
            'DecisionDueDate',
            'GrantDate',
            'ExpiryDate',
@@ -64,30 +61,23 @@ df.columns = df.columns.str.replace('Y', 'Latitude')
 
 df = df.set_index('OBJECTID')
 
-#print(df['OBJECTID'].is_unique)
-
-
 #So far, we have removed unnecessary columns and changed the index of our DataFrame to something more sensible. In this section, we will clean specific columns and get them to a uniform format to get a better understanding of the dataset and enforce consistency.
 
-df = df[df.ReceivedDate != '3185/10/01 00:00:00+00'] # this entry throws an error when we convert to datetime.
-
-# creating a datetime column
-df['date']=pd.to_datetime(df['ReceivedDate'], format='%Y/%m/%d %H:%M:%S+00')
-
-# removing unnecessary receivedDate column
-df = df.drop(['ReceivedDate'],axis=1)
-
 # filter by dates
-# df = df[(df['date'] > '2017-01-01') & (df['date'] < '2022-10-01')]
+df['DecisionDate']=pd.to_datetime(df['DecisionDate'], format='%Y/%m/%d %H:%M:%S+00')
+df = df[(df['DecisionDate'] > '2017-01-01') & (df['DecisionDate'] < '2022-10-01')]
 
-#Exploratory Data Analysis
-# Checking for null values
-# print(df.shape)
+# Cleaning
+df.loc[df['NumResidentialUnits'] == 0, 'OneOffHouse'] = 'NA'
+df.loc[df['NumResidentialUnits'] == 1, 'OneOffHouse'] = 'Yes'
+df.loc[df['NumResidentialUnits'] > 1, 'OneOffHouse'] = 'No'
+df.loc[df['OneOffHouse'] == 'Y', 'OneOffHouse'] = 'Yes'
+df.loc[df['Key_Growth_Areas'] == 'character(0)', 'Key_Growth_Areas'] = 'Outside_Key_Growth_Areas'
+df.loc[df['Cities_and_Suburbs'] == 'character(0)', 'Cities_and_Suburbs'] = 'Outside_Cities_and_Suburbs'
+df.loc[df['Metropolitian_Areas'] == 'character(0)', 'Metropolitian_Areas'] = 'Outside_Metropolitian_Areas'
 
-df = df.replace('character(0)','NA')
-
+# Delete NaN and null values
 df = df.replace(float('nan'),None)
-#delete NaN and null values
 df = df.dropna(subset=['Decision','AreaofSite','NumResidentialUnits','OneOffHouse','FloorArea','ApplicationType'])
 
 # Removing rows with decison values that are in conclusive
@@ -120,6 +110,7 @@ df = df[df['Decision'] != 'SPLIT DECISION(PERMISSION & REFUSAL)']
 df = df[df['Decision'] != 'Split decision']
 df = df[df['Decision'] != 'SPLIT DECISION(RETENTION PERMISSION)']
 
+# Making decision classes consistent
 df[['Decision']] = df[['Decision']].replace('APPLICATION WITHDRAWN','Withdrawn')
 df[['Decision']] = df[['Decision']].replace('WITHDRAWN ARTICLE 33 (NO SUB)','Withdrawn')
 df[['Decision']] = df[['Decision']].replace('WITHDRAW THE APPLICATION','Withdrawn')
@@ -131,34 +122,33 @@ df[['Decision']] = df[['Decision']].replace('WITHDRAWN ARTICLE 33 (SUBSECTION 4)
 df[['Decision']] = df[['Decision']].replace('WITHDRAWN AT ABP STAGE','Withdrawn')
 df[['Decision']] = df[['Decision']].replace('App. withdrawn as no C.AI recd in 6 mths          ','Withdrawn')
 
-df[['Decision']] = df[['Decision']].replace('ADDITIONAL INFORMATION','request additional information')
-df[['Decision']] = df[['Decision']].replace('REQUEST ADDITIONAL INFORMATION                    ','request additional information')
-df[['Decision']] = df[['Decision']].replace('REQUEST ADDITIONAL INFORMATION','request additional information')
-df[['Decision']] = df[['Decision']].replace('REQUEST ADDITIONAL INFORMATION          ','request additional information')
-df[['Decision']] = df[['Decision']].replace('SEEK CLARIFICATION OF ADDITIONAL INFO.','request additional information')
-df[['Decision']] = df[['Decision']].replace('CLARIFICATION OF ADDITIONAL INFORMATION','request additional information')
-df[['Decision']] = df[['Decision']].replace('SEEK CLARIFICATION OF ADDITIONAL INFO.            ','request additional information')
-df[['Decision']] = df[['Decision']].replace('CLARIFICATION OF FURTHER INFORMATION    ','request additional information')
+df[['Decision']] = df[['Decision']].replace('ADDITIONAL INFORMATION','Request additional information')
+df[['Decision']] = df[['Decision']].replace('REQUEST ADDITIONAL INFORMATION                    ','Request additional information')
+df[['Decision']] = df[['Decision']].replace('REQUEST ADDITIONAL INFORMATION','Request additional information')
+df[['Decision']] = df[['Decision']].replace('REQUEST ADDITIONAL INFORMATION          ','Request additional information')
+df[['Decision']] = df[['Decision']].replace('SEEK CLARIFICATION OF ADDITIONAL INFO.','Request additional information')
+df[['Decision']] = df[['Decision']].replace('CLARIFICATION OF ADDITIONAL INFORMATION','Request additional information')
+df[['Decision']] = df[['Decision']].replace('SEEK CLARIFICATION OF ADDITIONAL INFO.            ','Request additional information')
+df[['Decision']] = df[['Decision']].replace('CLARIFICATION OF FURTHER INFORMATION    ','Request additional information')
+df[['Decision']] = df[['Decision']].replace('ADDITIONAL INFORMATION','Request additional information')
+df[['Decision']] = df[['Decision']].replace('REQUEST ADDITIONAL INFORMATION                    ','Request additional information')
+df[['Decision']] = df[['Decision']].replace('REQUEST ADDITIONAL INFORMATION','Request additional information')
+df[['Decision']] = df[['Decision']].replace('REQUEST ADDITIONAL INFORMATION          ','Request additional information')
+df[['Decision']] = df[['Decision']].replace('SEEK CLARIFICATION OF ADDITIONAL INFO.','Request additional information')
+df[['Decision']] = df[['Decision']].replace('CLARIFICATION OF ADDITIONAL INFORMATION','Request additional information')
+df[['Decision']] = df[['Decision']].replace('SEEK CLARIFICATION OF ADDITIONAL INFO.            ','Request additional information')
+df[['Decision']] = df[['Decision']].replace('CLARIFICATION OF FURTHER INFORMATION    ','Request additional information')
 
-df[['Decision']] = df[['Decision']].replace('ADDITIONAL INFORMATION','request additional information')
-df[['Decision']] = df[['Decision']].replace('REQUEST ADDITIONAL INFORMATION                    ','request additional information')
-df[['Decision']] = df[['Decision']].replace('REQUEST ADDITIONAL INFORMATION','request additional information')
-df[['Decision']] = df[['Decision']].replace('REQUEST ADDITIONAL INFORMATION          ','request additional information')
-df[['Decision']] = df[['Decision']].replace('SEEK CLARIFICATION OF ADDITIONAL INFO.','request additional information')
-df[['Decision']] = df[['Decision']].replace('CLARIFICATION OF ADDITIONAL INFORMATION','request additional information')
-df[['Decision']] = df[['Decision']].replace('SEEK CLARIFICATION OF ADDITIONAL INFO.            ','request additional information')
-df[['Decision']] = df[['Decision']].replace('CLARIFICATION OF FURTHER INFORMATION    ','request additional information')
-
-df[['Decision']] = df[['Decision']].replace('APPLICATION DECLARED INVALID','invalid')
-df[['Decision']] = df[['Decision']].replace('INVALID APPLICATION DUE TO SITE NOTICE            ','invalid')
-df[['Decision']] = df[['Decision']].replace('INVALID APPLICATION','invalid')
-df[['Decision']] = df[['Decision']].replace('INVALID - SITE NOTICE','invalid')
-df[['Decision']] = df[['Decision']].replace('DECLARE INVALID (SITE NOTICE)           ','invalid')
-df[['Decision']] = df[['Decision']].replace('DECLARE INVALID (SITE NOTICE)','invalid')
-df[['Decision']] = df[['Decision']].replace('DECLARE APPLICATION INVALID             ','invalid')
-df[['Decision']] = df[['Decision']].replace('CANNOT DETERMINE','invalid')
-df[['Decision']] = df[['Decision']].replace('DECLARE APPLICATION INVALID','invalid')
-df[['Decision']] = df[['Decision']].replace('Invalid Application (site notice)','invalid')
+df[['Decision']] = df[['Decision']].replace('APPLICATION DECLARED INVALID','Invalid')
+df[['Decision']] = df[['Decision']].replace('INVALID APPLICATION DUE TO SITE NOTICE            ','Invalid')
+df[['Decision']] = df[['Decision']].replace('INVALID APPLICATION','Invalid')
+df[['Decision']] = df[['Decision']].replace('INVALID - SITE NOTICE','Invalid')
+df[['Decision']] = df[['Decision']].replace('DECLARE INVALID (SITE NOTICE)           ','Invalid')
+df[['Decision']] = df[['Decision']].replace('DECLARE INVALID (SITE NOTICE)','Invalid')
+df[['Decision']] = df[['Decision']].replace('DECLARE APPLICATION INVALID             ','Invalid')
+df[['Decision']] = df[['Decision']].replace('CANNOT DETERMINE','Invalid')
+df[['Decision']] = df[['Decision']].replace('DECLARE APPLICATION INVALID','Invalid')
+df[['Decision']] = df[['Decision']].replace('Invalid Application (site notice)','Invalid')
 
 df[['Decision']] = df[['Decision']].replace('REFUSED','Refused')
 df[['Decision']] = df[['Decision']].replace('REFUSE PERMISSION','Refused')
@@ -231,16 +221,28 @@ df[['Decision']] = df[['Decision']].replace('CANNOT DETERMINE','Granted')
 df[['Decision']] = df[['Decision']].replace('DECLARE APPLICATION INVALID','Granted')
 df[['Decision']] = df[['Decision']].replace('Invalid Application (site notice)','Granted')
 
-#Clean Decision Column
-#Clean LandUseCode Column
-#Clean NumResidentialUnits
-#Add keyGrowthArea column
-#Add metropolitanArea column
-#Add suburbsAndCities column
-#Juan
-#Clean ApplicationType column
-#Clean AreaofSite column
-#Clean FloorArea column
-#Clean OneOffHouse column
-#Filter the csv only applications after 2017/01/01
+# Making Application Type classes consistent
+df[['ApplicationType']] = df[['ApplicationType']].replace('APPROVAL','Permission')
+df[['ApplicationType']] = df[['ApplicationType']].replace('C','Permission')
+df[['ApplicationType']] = df[['ApplicationType']].replace('EXTENSION OF DURATION','Permission')
+df[['ApplicationType']] = df[['ApplicationType']].replace('O','Permission')
+df[['ApplicationType']] = df[['ApplicationType']].replace('OUTLINE PERMISSION','Permission')
+df[['ApplicationType']] = df[['ApplicationType']].replace('Outline Permission','Permission')
+df[['ApplicationType']] = df[['ApplicationType']].replace('P','Permission')
+df[['ApplicationType']] = df[['ApplicationType']].replace('PERMISSION','Permission')
+df[['ApplicationType']] = df[['ApplicationType']].replace('PERMISSION CONSEQUENT','Permission')
+df[['ApplicationType']] = df[['ApplicationType']].replace('Perm. following Grant of Outline Perm.','Permission')
+df[['ApplicationType']] = df[['ApplicationType']].replace('Permission and Outline Permission','Permission')
+df[['ApplicationType']] = df[['ApplicationType']].replace('Permission and Retention','Permission')
+df[['ApplicationType']] = df[['ApplicationType']].replace('R', 'Retention')
+df[['ApplicationType']] = df[['ApplicationType']].replace('RETENTION', 'Retention')
+df[['ApplicationType']] = df[['ApplicationType']].replace('SDZ Application','Permission')
+df[['ApplicationType']] = df[['ApplicationType']].replace('TEMPORARY PERMISSION','Permission')
 
+df = df[df['Decision'] != 'Withdrawn']
+df = df[df['Decision'] != 'Invalid']
+df = df[df['Decision'] != 'Request additional information']
+df[['Decision']] = df[['Decision']].replace('Refused',0)
+df[['Decision']] = df[['Decision']].replace('Granted',1)
+
+# df.to_csv('data/cleaned_output.csv')
