@@ -16,7 +16,7 @@ from sklearn.tree import DecisionTreeClassifier
 import seaborn as sns
 import matplotlib
 import pandas as pd
-matplotlib.use('TkAgg')
+#matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 import numpy as np
@@ -25,7 +25,8 @@ from sklearn import linear_model
 import random
 from sklearn.linear_model import LogisticRegression
 from sklearn import metrics
-
+from sklearn.metrics import accuracy_score
+from textwrap import wrap
 
 
 # -------------------------- DATA PREPROCESSING ----------------------------
@@ -270,16 +271,12 @@ df[['OneOffHouse']] = df[['OneOffHouse']].replace('No',0)
 df[['OneOffHouse']] = df[['OneOffHouse']].replace('NA',randint(0, 1))
 
 
-
-
-
-#g = sns.pairplot(df.sample(50),hue='Decision')
-
 # Investigate the distribution of y
 # here we investigate if the dataset is imbalance or not
-#sns.countplot(x='Decision', data=df, palette='Set3')
+sns.countplot(x='Decision', data=df, palette='Set3')
+plt.title("Investigating Imbalance")
 
-#making categorical variables into numeric representation
+# Making categorical variables into numeric representation
 df = pd.get_dummies(df, columns=['PlanningAuthority','ApplicationType','Key_Growth_Areas','Cities_and_Suburbs','Metropolitian_Areas'])
 
 too_drop = ['Decision','DecisionDate']
@@ -288,72 +285,54 @@ too_drop = ['Decision','DecisionDate']
 X = df.drop(too_drop, axis=1).values
 y = df['Decision']
 y = df.iloc[:, 2]
-
-
 y = y.astype(int)
-
 
 #print(X.shape)
 #print(y.shape)
 
-
 dt = DecisionTreeClassifier(random_state=15, criterion='entropy', max_depth=10)
-
 dt.fit(X,y)
-
 
 fi_col = []
 fi = []
-
 
 for i,column in enumerate(df.drop(too_drop, axis=1)):
    # print('The feature importance for {} is: {}'.format(column,dt.feature_importances_[i]))
     fi_col.append(column)
     fi.append(dt.feature_importances_[i])
 
-#creating dataset
+# Creating dataset
 fi_df = zip(fi_col, fi)
 fi_df = pd.DataFrame(fi_df, columns=['Feature', 'Feature Importance'])
 
-
-#ordering the data
+# Ordering dataset
 fi_df = fi_df.sort_values('Feature Importance', ascending= False).reset_index()
 
 columns_to_keep = fi_df['Feature'][0:22]
 
 
-#Split the data into X and y
-
+# Split the data into X and y
 X = df[columns_to_keep].values
 y = df['Decision']
 y = df.iloc[:, 2]
 
-
-
-
-
 #print(X.shape)
 #print(y.shape)
 
-
-#Hold-out validation
+# Hold-out validation
 
 smote = SMOTE(random_state=888)
-
 
 #First one
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=15)
 
 
-#Second one
-#X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.1, random_state=15)
-
-
 #Oversampling using SMOTE
 X_resampled, y_resampled = smote.fit_resample(X_train, y_train)
 
+#X_test, y_test = smote.fit_resample(X_test, y_test)
 
-#print(y_resampled.value_counts())
+print(y_resampled.value_counts())
 
 print(X_train.shape)
 #print(X_test.shape)
@@ -363,47 +342,7 @@ print(y_train.shape)
 #print(y_test.shape)
 #print(y_valid.shape)
 
-
-
-
-#TRAINING LOGISTIC REGRESION
-
-log_reg = LogisticRegression(random_state=10, solver='lbfgs',max_iter=1000)
-
-log_reg.fit(X_resampled, y_resampled)
-
-
-#Predict - Predict class labels for samples in X
-
-y_pred = log_reg.predict(X_resampled)
-
-#print(y_resampled.value_counts())
-
-
- # Predict_proba - Probability Estimates
-pred_proba = log_reg.predict_proba(X_resampled)
-#print(log_reg.predict_proba(X_resampled))
-#print(y_pred)
-
-#coef - Coefficient of the features in the decision function
-
-#print(log_reg.coef_)
-
-
-
-
-## EVALUATING THE MODEL
-
-#accurracy on Train
-#print('The training accurracy is: ', log_reg.score(X_train,y_train))
-#Accurracy on Test
-#print('The test accurracy is: ', log_reg.score(X_test,y_test))
-
-
-#Classification Report
-#print(classification_report(y_resampled,y_pred))
-
-#Confusion Matrix function
+# Plotting Confusion Matrix function
 def plot_confusion_matrix(cm, classes=None, title='Confusion Matrix'):
     """Plots a confusion matrix"""
 
@@ -411,191 +350,181 @@ def plot_confusion_matrix(cm, classes=None, title='Confusion Matrix'):
         sns.heatmap(cm, xticklabels=classes, yticklabels=classes, vmin=0,vmax=1, annot=True,annot_kws={'size':25})
     else:
         sns.heatmap(cm,vmin=0,vmax=1.)
-        plt.title(title)
-        plt.ylabel('True label')
-        plt.xlabel('Predicted label')
+    plt.title(title)
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    plt.show()
+
+def plot_Accuracy(Y, X, Yerr, x_label, x_lim, model_type,dataset_title):
+    plt.errorbar(Y,X,yerr=Yerr) # plot errobar
+    plt.xlim(0,x_lim)
+    plt.xlabel(str(x_label)); plt.ylabel('Accuracy')  # add labeling
+    title = 'K-fold Cross Validation for '+str(model_type)+' Model - '+str(dataset_title) # add labeling
+    plt.title("\n".join(wrap(title, 50)))
+    plt.show()
 
 
-#Visualizing cm
-cm = confusion_matrix(y_resampled,y_pred)
-cm_norm = cm / cm.sum(axis=1).reshape(-1,1)
+# HYPER PARAMETER TUNING
 
-#print(log_reg.classes_)
-
-#plot_confusion_matrix(cm=cm_norm,classes=log_reg.classes_, title='Confusion Matrix')
-
-# Calculating False Positives (FP), False Negatives (FN), True Positives (TP) & True Negatives (TN)
-
-FP = cm.sum(axis=0) - np.diag(cm)
-FN = cm.sum(axis=1) - np.diag(cm)
-TP = np.diag(cm)
-TN = cm.sum() - (FP + FN + TP)
-
-
-#Sensitivty, hit rate, recall, or true positive rate
-TPR = TP / (TP + FN)
-#print('The true Positive Rate is: ', TPR)
-
-#Precision or positive predictive value
-PPV = TP / (TP + FP)
-#print('The Precision is: ', PPV)
-
-#False positive rate or False alarm rate
-FPR = FP / (FP+TN)
-#print('The False positive rate is: ', FPR)
-
-#False negative rate or Miss rate
-FNR = FN / (FN+TP)
-#print('The False Negative Rate is: ', FNR)
-
-
-##Total avarages :
-#print("")
-#print('The average TPR is:', TPR.sum()/2)
-#print('The average Precision is:', PPV.sum()/2)
-#print('The average False Positive rate is:', FPR.sum()/2)
-#print('The average False Negative Rate is:', FNR.sum()/2)
-
-
-#Running Log Loss on training
-#print('The log Loss on Training is:', log_loss(y_resampled,pred_proba))
-
-
-
-#Hyper Parameter Tuning
-
-#Creating a range for C values
-np.geomspace(1e-5, 1e5, num=20)
-
-fig, ay, = plt.subplots()
-
-#ploting it
-ay.plot(np.geomspace(1e-5, 1e5, num=20)) # uniformly distributed in Log space
-ay.plot(np.linspace(1e-5,1e5, num=20)) # uniformly distributed in linear space, instead of Log space
-
-#Looping over the parameters
+# Method for selecting C Values
+def select_C(X, y, c_values,model_type,dataset_title,x_lim):
+    
+    logistic_loss = []; mean_error=[]; std_error=[]  # initalizing arrays
+    kf = KFold(n_splits = 5,random_state = 0, shuffle=True)
+       
+    #Loop through each k fold
+    for c in c_values:
+        temp1 = [] 
+        temp3 = []
+        model = LogisticRegression(random_state=10, solver='lbfgs', C=c,max_iter=10000)
+                
+        for train, test in kf.split(X):
+            
+            model.fit(X[train], y[train])
+            ypred = model.predict(X[test])
+            score = accuracy_score(y[test], ypred)
+            pred_proba_t = model.predict_proba(X[test])
+            loss = log_loss(y[test],pred_proba_t)
+            temp1.append(score)
+            temp3.append(loss)
+        
+        #Get mean & variance
+        mean_error.append(np.array(temp1).mean())
+        std_error.append(np.array(temp1).std())    
+        logistic_loss.append(np.array(temp3).mean())    
+        
+    #Plot
+    x_label = "Range of C Values"
+    plot_Accuracy(c_values, mean_error, std_error, x_label, x_lim, model_type,dataset_title)   
+    df = pd.DataFrame({'C':c_values,'mean_error':mean_error,'std_error':std_error,'logistic_loss':logistic_loss})
+    return df
 
 C_list = np.geomspace(1e-5, 1e5, num=20)
-CA = []
-Logaritmic_Loss = []
+df_C_comparison = select_C(X_resampled, y_resampled, C_list,"Logistic Regression","Selecting C",1e5)
+select_C(X_resampled, y_resampled, C_list,"Logistic Regression","Selecting C",10)
+select_C(X_resampled, y_resampled, C_list,"Logistic Regression","Selecting C",1)
+select_C(X_resampled, y_resampled, C_list,"Logistic Regression","Selecting C",0.1)
 
-for c in C_list:
-    log_reg2 = LogisticRegression(random_state=10, solver='lbfgs', C=c,max_iter=10000)
-    log_reg2.fit(X_resampled, y_resampled)
-    score = log_reg2.score(X_resampled,y_resampled)
-    CA.append(score)
-   # print("The classification accurracy of C parameter {} is: {}:".format(c,score))
-    pred_proba_t = log_reg2.predict_proba(X_resampled)
-    log_loss2 = log_loss(y_resampled,pred_proba_t)
-    Logaritmic_Loss.append(log_loss2)
-    #print("The logg Loss of C parameter {} is {}:".format(c,log_loss2))
-    #print("")
-
-
-# putting the outcomes in a Table
-
-#Reshaping
-CA2 = np.array(CA).reshape(20,)
-Logaritmic_Loss2 = np.array(Logaritmic_Loss).reshape(20,)
-
-#zip
-outcomes = zip(C_list, CA2, Logaritmic_Loss2)
-
-#df
-df_outcomes = pd.DataFrame(outcomes, columns=["C_List", 'CA2','Logarithmic_Loss2'])
-
-
-#Ordering the data (sort values)
-df_outcomes = df_outcomes.sort_values("Logarithmic_Loss2", ascending=True)
-
-#print(df_outcomes)
-
-
-
-## Applying K-fold cross validation:
-
-
-from sklearn.model_selection import KFold
-kf = KFold(n_splits= 5, random_state = 0, shuffle=True)
-
-#Logistic Regresion Cross validation:
-Log_reg3 = LogisticRegressionCV(cv=kf,random_state=15, Cs=C_list)
-Log_reg3.fit(X_resampled,y_resampled)
-#print("The CA is:", Log_reg3.score(X_resampled, y_resampled))
-pred_proba_t = Log_reg3.predict_proba(X_resampled)
-log_loss3 = log_loss(y_resampled,pred_proba_t)
-#print("The logistic Loss is: ", log_loss3)
-
-#print("The optimal C parameter is: ", Log_reg3.C_)
-
-
-
-
-
-#Training a Dummy Classifier
-
-dummy_clf = DummyClassifier(strategy="most_frequent")
-dummy_clf.fit(X_resampled,y_resampled)
-score = dummy_clf.score(X_test,y_test)
-
-pred_proba_t = dummy_clf.predict_proba(X_resampled)
-log_loss2 = log_loss(y_resampled,pred_proba_t)
-Logaritmic_Loss.append(log_loss2)
-
-#print("Testing accurracy:", score)
-#print("Log Loss:", log_loss2)
-
-
+C_comparison = df_C_comparison.sort_values("mean_error", ascending=True)
 
 # FINAL MODEL WITH SELECTED PARAMETERS
 
-log_reg3 = LogisticRegression(random_state=10,solver='lbfgs',C=6.158482)
-log_reg3.fit(X_resampled, y_resampled)
-score = log_reg3.score(X_resampled, y_resampled)
+log_reg_final = LogisticRegression(random_state=10,solver='lbfgs',C=0.0483)
+log_reg_final.fit(X_resampled, y_resampled)
+score_logistic_train = log_reg_final.score(X_resampled, y_resampled)
+score_logistic_test = log_reg_final.score(X_test, y_test)
 
-y_pred_logistic = log_reg3.predict(X_resampled)
+y_pred_logistic = log_reg_final.predict(X_resampled)
+y_pred_logistic_test = log_reg_final.predict(X_test)
 
+# RESULTS
 
+accuracy_logistic = accuracy_score(y_test,y_pred_logistic_test)
 
+# Classification Reports
+print("Logistic Regression Classification Table for Training Data")
+print(classification_report(y_resampled,y_pred_logistic))
+
+print("Logistic Regression Classification Table for Training Data")
+print(classification_report(y_test,y_pred_logistic_test))
+
+# Visualising Confusion Matrix For KNN Classifier
+conf_matrix_logistic = metrics.confusion_matrix(y_resampled,y_pred_logistic)
+conf_matrix_logistic_norm = conf_matrix_logistic/conf_matrix_logistic.sum(axis=1).reshape(-1,1)
+plot_confusion_matrix(cm=conf_matrix_logistic_norm,classes=['Refused','Granted'], title='Logistic Regression Confusion Matrix For Training Data')
+
+conf_matrix_logistic_test = metrics.confusion_matrix(y_test,y_pred_logistic_test)
+conf_matrix_logistic_test_norm = conf_matrix_logistic_test/conf_matrix_logistic_test.sum(axis=1).reshape(-1,1)
+plot_confusion_matrix(cm=conf_matrix_logistic_test_norm,classes=['Refused','Granted'], title='Logistic Regression Confusion Matrix For Test Data')
 
 #------- KNN CLASSIFIER -----------
+# =============================================================================
+# 
+# 
+# 
+# 
+# 
 
-
-mean_score = []
-std_score = []
-
-#for K in range(2,10):
- #   clf = KNeighborsClassifier(n_neighbors=K)
-  #  clf.fit(X_resampled,y_resampled)
-   # scores = cross_val_score(clf, X_train, y_train, cv=5)
-    #mean_score.append(scores.mean()*100)
-    #std_score.append(scores.std()*100)
-    #y_pred = clf.predict(X_resampled)
-    #print("Score",round(scores.mean(),3))
-    #print("Score",round((y_pred==y_test.values).sum()/y_pred.shape[0],3))
-
+# # 
+# def select_k(X,y,k_values,dataset_title):
+        
+#     mean_error=[]; std_error=[]  # initalizing arrays
+#     kf = KFold(n_splits = 5)
+        
+#     #Loop through each k fold
+#     for k in k_values:
+#         temp = [] 
+#         model = KNeighborsClassifier(n_neighbors = k, weights= 'uniform')
+                
+#         for train, test in kf.split(X):
+            
+#             model.fit(X[train], y[train])
+#             ypred = model.predict(X[test])
+#             score = accuracy_score(y[test], ypred)
+#             temp.append(score)
+        
+#         #Get mean & variance
+#         mean_error.append(np.array(temp).mean())
+#         std_error.append(np.array(temp).std())    
+        
+#     #Plot
+#     x_label = "Range of K Values"
+#     model_type = "K Neighbour Classifier"
+#     plot_Accuracy(k_values, mean_error, std_error, x_label, model_type, dataset_title) 
+    
+# K_values_narrow = [5,10,15]
+# select_k(X_resampled,y_resampled,K_values_narrow,'Selecting Best K')
+# # 
+# 
+# 
+# mean_score = []
+# std_score = []
+# 
+# for K in range(2,10):
+#   clf = KNeighborsClassifier(n_neighbors=K)
+#   clf.fit(X_resampled,y_resampled)
+#   scores = cross_val_score(clf, X_train, y_train, cv=5)
+#   mean_score.append(scores.mean()*100)
+#   std_score.append(scores.std()*100)
+#   y_pred = clf.predict(X_resampled)
+#   print("Score",round(scores.mean(),3))
+#   print("Score",round((y_pred==y_test.values).sum()/y_pred.shape[0],3))
+# 
+# =============================================================================
+# FINAL MODEL WITH SELECTED PARAMETERS
 
 clf = KNeighborsClassifier(n_neighbors=10)
 clf.fit(X_resampled,y_resampled)
 y_pred_knn = clf.predict(X_resampled)
+y_pred_knn_test = clf.predict(X_test)
 
+# RESULTS
 
+accuracy_knn = accuracy_score(y_test,y_pred_knn_test)
+
+# Classification Report
+print("KNN Classification Table for Training Data")
+print(classification_report(y_resampled,y_pred_knn))
+
+print("KNN Classification Table for Training Data")
+print(classification_report(y_test,y_pred_knn_test))
+
+# Visualising Confusion Matrix For KNN Classifier
 conf_matrix_knn = metrics.confusion_matrix(y_resampled,y_pred_knn)
+conf_matrix_knn_norm = conf_matrix_knn/conf_matrix_knn.sum(axis=1).reshape(-1,1)
+plot_confusion_matrix(cm=conf_matrix_knn_norm,classes=['Refused','Granted'], title='KNN Confusion Matrix For Training Data')
 
-cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix=conf_matrix_knn, display_labels=[True, False])
+conf_matrix_knn_test = metrics.confusion_matrix(y_test,y_pred_knn_test)
+conf_matrix_knn_test_norm = conf_matrix_knn_test/conf_matrix_knn_test.sum(axis=1).reshape(-1,1)
+plot_confusion_matrix(cm=conf_matrix_knn_test_norm,classes=['Refused','Granted'], title='KNN Confusion Matrix For Test Data')
 
-dummy = DummyClassifier(strategy='most_frequent').fit(X_resampled, y_resampled)
-ydummy1 = dummy.predict(X_resampled)
-
-dummy = DummyRegressor(strategy='mean').fit(X_resampled, y_resampled)
-ydummy2 = dummy.predict(X_resampled)
-
-
+# COMPARISON
 
 result_table = pd.DataFrame(columns=['classifiers', 'fpr','tpr','auc'])
+
 fpr, tpr, _ = roc_curve(y_resampled,y_pred_logistic)
 auc = roc_auc_score(y_resampled,y_pred_logistic)
-result_table = result_table.append({'classifiers':'logistics',
+result_table = result_table.append({'classifiers':'logistics-train',
                                         'fpr':fpr,
                                         'tpr':tpr,
                                         'auc':auc}, ignore_index=True)
@@ -603,18 +532,34 @@ result_table = result_table.append({'classifiers':'logistics',
 
 fpr, tpr, _ = roc_curve(y_resampled,y_pred_knn)
 auc = roc_auc_score(y_resampled,y_pred_knn)
-result_table = result_table.append({'classifiers':'knn',
+result_table = result_table.append({'classifiers':'knn-train',
                                        'fpr':fpr,
                                        'tpr':tpr,
                                        'auc':auc}, ignore_index=True)
+
+fpr, tpr, _ = roc_curve(y_test,y_pred_logistic_test)
+auc = roc_auc_score(y_test,y_pred_logistic_test)
+result_table = result_table.append({'classifiers':'logistics-test',
+                                        'fpr':fpr,
+                                        'tpr':tpr,
+                                        'auc':auc}, ignore_index=True)
+
+
+fpr, tpr, _ = roc_curve(y_test,y_pred_knn_test)
+auc = roc_auc_score(y_test,y_pred_knn_test)
+result_table = result_table.append({'classifiers':'knn-test',
+                                       'fpr':fpr,
+                                       'tpr':tpr,
+                                       'auc':auc}, ignore_index=True)
+
+# PLOT ROC Curve
 
 fig, ayz, = plt.subplots()
 
 for i in result_table.index:
     plt.plot(result_table.loc[i]['fpr'],
              result_table.loc[i]['tpr'],
-             label="{}, AUC={:.3f}".format(i, result_table.loc[i]['auc'],result_table.loc[i]['classifiers']))
-
+             label="{}, AUC={:.3f}".format(result_table.loc[i]['classifiers'],result_table.loc[i]['auc']))
 
 
 plt.plot([0, 1], [0, 1], color='orange', linestyle='--')
@@ -628,11 +573,41 @@ plt.ylabel("True Positive Rate", fontsize=15)
 plt.title('ROC Curve Analysis', fontweight='bold', fontsize=15)
 plt.legend(prop={'size': 13}, loc='lower right')
 
-
-
-
 plt.show()
 
+# BASELINE MODELS
+
+# Baseline Classifer 1 - Trained on X_resampled
+
+dummy_clf1 = DummyClassifier(strategy="most_frequent")
+dummy_clf1.fit(X_resampled,y_resampled)
+score_dummy1 = dummy_clf1.score(X_test,y_test)
+y_pred_dummy1 = dummy_clf1.predict(X_test)
+pred_proba_t_dummy1 = dummy_clf1.predict_proba(X_test)
+log_loss_dummy1 = log_loss(y_test,pred_proba_t_dummy1)
+
+print("Testing accurracy:", score_dummy1)
+print("Log Loss:", log_loss_dummy1)
 
 
-#df.to_csv('data/cleaned_output.csv')
+accuracy_dummy1 = accuracy_score(y_test,y_pred_dummy1)
+
+# Baseline Classifer 2 - Trained on X_test
+
+dummy_clf2 = DummyClassifier(strategy="most_frequent")
+dummy_clf2.fit(X_train,y_train)
+score_dummy2 = dummy_clf2.score(X_test,y_test)
+y_pred_dummy2 = dummy_clf2.predict(X_test)
+pred_proba_t_dummy2 = dummy_clf2.predict_proba(X_test)
+log_loss_dummy2 = log_loss(y_test,pred_proba_t_dummy2)
+
+print("Testing accurracy:", score_dummy2)
+print("Log Loss:", log_loss_dummy2)
+
+accuracy_dummy2 = accuracy_score(y_test,y_pred_dummy2)
+
+accuracyScores = [accuracy_logistic,accuracy_knn,accuracy_dummy1,accuracy_dummy2]
+modelNames = ['accuracy_logistic','accuracy_knn','accuracy_dummy1','accuracy_dummy2']
+
+accuracyTable = pd.DataFrame([modelNames,accuracyScores])
+
