@@ -3,13 +3,15 @@
 
 import datetime
 from imblearn.over_sampling import SMOTE
-from sklearn.metrics import log_loss
+from sklearn.metrics import log_loss, roc_auc_score, roc_curve
 from random import randint
 from IPython.display import Image
-from sklearn.dummy import DummyClassifier
+from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.metrics import classification_report, confusion_matrix
-
+from sklearn.model_selection import KFold
+from sklearn.linear_model import LogisticRegressionCV
 from sklearn.model_selection import cross_val_score
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 import seaborn as sns
 import matplotlib
@@ -366,7 +368,7 @@ print(y_train.shape)
 
 #TRAINING LOGISTIC REGRESION
 
-log_reg = LogisticRegression(random_state=10, solver='lbfgs')
+log_reg = LogisticRegression(random_state=10, solver='lbfgs',max_iter=1000)
 
 log_reg.fit(X_resampled, y_resampled)
 
@@ -393,9 +395,9 @@ pred_proba = log_reg.predict_proba(X_resampled)
 ## EVALUATING THE MODEL
 
 #accurracy on Train
-print('The training accurracy is: ', log_reg.score(X_train,y_train))
+#print('The training accurracy is: ', log_reg.score(X_train,y_train))
 #Accurracy on Test
-print('The test accurracy is: ', log_reg.score(X_test,y_test))
+#print('The test accurracy is: ', log_reg.score(X_test,y_test))
 
 
 #Classification Report
@@ -418,9 +420,9 @@ def plot_confusion_matrix(cm, classes=None, title='Confusion Matrix'):
 cm = confusion_matrix(y_resampled,y_pred)
 cm_norm = cm / cm.sum(axis=1).reshape(-1,1)
 
-print(log_reg.classes_)
+#print(log_reg.classes_)
 
-plot_confusion_matrix(cm=cm_norm,classes=log_reg.classes_, title='Confusion Matrix')
+#plot_confusion_matrix(cm=cm_norm,classes=log_reg.classes_, title='Confusion Matrix')
 
 # Calculating False Positives (FP), False Negatives (FN), True Positives (TP) & True Negatives (TN)
 
@@ -432,31 +434,31 @@ TN = cm.sum() - (FP + FN + TP)
 
 #Sensitivty, hit rate, recall, or true positive rate
 TPR = TP / (TP + FN)
-print('The true Positive Rate is: ', TPR)
+#print('The true Positive Rate is: ', TPR)
 
 #Precision or positive predictive value
 PPV = TP / (TP + FP)
-print('The Precision is: ', PPV)
+#print('The Precision is: ', PPV)
 
 #False positive rate or False alarm rate
 FPR = FP / (FP+TN)
-print('The False positive rate is: ', FPR)
+#print('The False positive rate is: ', FPR)
 
 #False negative rate or Miss rate
 FNR = FN / (FN+TP)
-print('The False Negative Rate is: ', FNR)
+#print('The False Negative Rate is: ', FNR)
 
 
 ##Total avarages :
-print("")
-print('The average TPR is:', TPR.sum()/2)
-print('The average Precision is:', PPV.sum()/2)
-print('The average False Positive rate is:', FPR.sum()/2)
-print('The average False Negative Rate is:', FNR.sum()/2)
+#print("")
+#print('The average TPR is:', TPR.sum()/2)
+#print('The average Precision is:', PPV.sum()/2)
+#print('The average False Positive rate is:', FPR.sum()/2)
+#print('The average False Negative Rate is:', FNR.sum()/2)
 
 
 #Running Log Loss on training
-print('The log Loss on Training is:', log_loss(y_resampled,pred_proba))
+#print('The log Loss on Training is:', log_loss(y_resampled,pred_proba))
 
 
 
@@ -465,9 +467,167 @@ print('The log Loss on Training is:', log_loss(y_resampled,pred_proba))
 #Creating a range for C values
 np.geomspace(1e-5, 1e5, num=20)
 
+fig, ay, = plt.subplots()
+
 #ploting it
-plt.plot(np.geomspace(1e-5, 1e5, num=20)) # uniformly distributed in Log space
-plt.plot(np.linspace(1e-5,1e5, num=20)) # uniformly distributed in linear space, instead of Log space
+ay.plot(np.geomspace(1e-5, 1e5, num=20)) # uniformly distributed in Log space
+ay.plot(np.linspace(1e-5,1e5, num=20)) # uniformly distributed in linear space, instead of Log space
+
+#Looping over the parameters
+
+C_list = np.geomspace(1e-5, 1e5, num=20)
+CA = []
+Logaritmic_Loss = []
+
+for c in C_list:
+    log_reg2 = LogisticRegression(random_state=10, solver='lbfgs', C=c,max_iter=10000)
+    log_reg2.fit(X_resampled, y_resampled)
+    score = log_reg2.score(X_resampled,y_resampled)
+    CA.append(score)
+   # print("The classification accurracy of C parameter {} is: {}:".format(c,score))
+    pred_proba_t = log_reg2.predict_proba(X_resampled)
+    log_loss2 = log_loss(y_resampled,pred_proba_t)
+    Logaritmic_Loss.append(log_loss2)
+    #print("The logg Loss of C parameter {} is {}:".format(c,log_loss2))
+    #print("")
+
+
+# putting the outcomes in a Table
+
+#Reshaping
+CA2 = np.array(CA).reshape(20,)
+Logaritmic_Loss2 = np.array(Logaritmic_Loss).reshape(20,)
+
+#zip
+outcomes = zip(C_list, CA2, Logaritmic_Loss2)
+
+#df
+df_outcomes = pd.DataFrame(outcomes, columns=["C_List", 'CA2','Logarithmic_Loss2'])
+
+
+#Ordering the data (sort values)
+df_outcomes = df_outcomes.sort_values("Logarithmic_Loss2", ascending=True)
+
+#print(df_outcomes)
+
+
+
+## Applying K-fold cross validation:
+
+
+from sklearn.model_selection import KFold
+kf = KFold(n_splits= 5, random_state = 0, shuffle=True)
+
+#Logistic Regresion Cross validation:
+Log_reg3 = LogisticRegressionCV(cv=kf,random_state=15, Cs=C_list)
+Log_reg3.fit(X_resampled,y_resampled)
+#print("The CA is:", Log_reg3.score(X_resampled, y_resampled))
+pred_proba_t = Log_reg3.predict_proba(X_resampled)
+log_loss3 = log_loss(y_resampled,pred_proba_t)
+#print("The logistic Loss is: ", log_loss3)
+
+#print("The optimal C parameter is: ", Log_reg3.C_)
+
+
+
+
+
+#Training a Dummy Classifier
+
+dummy_clf = DummyClassifier(strategy="most_frequent")
+dummy_clf.fit(X_resampled,y_resampled)
+score = dummy_clf.score(X_test,y_test)
+
+pred_proba_t = dummy_clf.predict_proba(X_resampled)
+log_loss2 = log_loss(y_resampled,pred_proba_t)
+Logaritmic_Loss.append(log_loss2)
+
+#print("Testing accurracy:", score)
+#print("Log Loss:", log_loss2)
+
+
+
+# FINAL MODEL WITH SELECTED PARAMETERS
+
+log_reg3 = LogisticRegression(random_state=10,solver='lbfgs',C=6.158482)
+log_reg3.fit(X_resampled, y_resampled)
+score = log_reg3.score(X_resampled, y_resampled)
+
+y_pred_logistic = log_reg3.predict(X_resampled)
+
+
+
+
+#------- KNN CLASSIFIER -----------
+
+
+mean_score = []
+std_score = []
+
+#for K in range(2,10):
+ #   clf = KNeighborsClassifier(n_neighbors=K)
+  #  clf.fit(X_resampled,y_resampled)
+   # scores = cross_val_score(clf, X_train, y_train, cv=5)
+    #mean_score.append(scores.mean()*100)
+    #std_score.append(scores.std()*100)
+    #y_pred = clf.predict(X_resampled)
+    #print("Score",round(scores.mean(),3))
+    #print("Score",round((y_pred==y_test.values).sum()/y_pred.shape[0],3))
+
+
+clf = KNeighborsClassifier(n_neighbors=10)
+clf.fit(X_resampled,y_resampled)
+y_pred_knn = clf.predict(X_resampled)
+
+
+conf_matrix_knn = metrics.confusion_matrix(y_resampled,y_pred_knn)
+
+cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix=conf_matrix_knn, display_labels=[True, False])
+
+dummy = DummyClassifier(strategy='most_frequent').fit(X_resampled, y_resampled)
+ydummy1 = dummy.predict(X_resampled)
+
+dummy = DummyRegressor(strategy='mean').fit(X_resampled, y_resampled)
+ydummy2 = dummy.predict(X_resampled)
+
+
+
+result_table = pd.DataFrame(columns=['classifiers', 'fpr','tpr','auc'])
+fpr, tpr, _ = roc_curve(y_resampled,y_pred_logistic)
+auc = roc_auc_score(y_resampled,y_pred_logistic)
+result_table = result_table.append({'classifiers':'logistics',
+                                        'fpr':fpr,
+                                        'tpr':tpr,
+                                        'auc':auc}, ignore_index=True)
+
+
+fpr, tpr, _ = roc_curve(y_resampled,y_pred_knn)
+auc = roc_auc_score(y_resampled,y_pred_knn)
+result_table = result_table.append({'classifiers':'knn',
+                                       'fpr':fpr,
+                                       'tpr':tpr,
+                                       'auc':auc}, ignore_index=True)
+
+fig, ayz, = plt.subplots()
+
+for i in result_table.index:
+    plt.plot(result_table.loc[i]['fpr'],
+             result_table.loc[i]['tpr'],
+             label="{}, AUC={:.3f}".format(i, result_table.loc[i]['auc'],result_table.loc[i]['classifiers']))
+
+
+
+plt.plot([0, 1], [0, 1], color='orange', linestyle='--')
+
+plt.xticks(np.arange(0.0, 1.1, step=0.1))
+plt.xlabel("False Positive Rate", fontsize=15)
+
+plt.yticks(np.arange(0.0, 1.1, step=0.1))
+plt.ylabel("True Positive Rate", fontsize=15)
+
+plt.title('ROC Curve Analysis', fontweight='bold', fontsize=15)
+plt.legend(prop={'size': 13}, loc='lower right')
+
 
 
 
