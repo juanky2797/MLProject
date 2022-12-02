@@ -401,7 +401,7 @@ pred_proba = log_reg.predict_proba(X_resampled)
 
 
 #Classification Report
-#print(classification_report(y_resampled,y_pred))
+print(classification_report(y_resampled,y_pred))
 
 #Confusion Matrix function
 def plot_confusion_matrix(cm, classes=None, title='Confusion Matrix'):
@@ -422,7 +422,7 @@ cm_norm = cm / cm.sum(axis=1).reshape(-1,1)
 
 #print(log_reg.classes_)
 
-#plot_confusion_matrix(cm=cm_norm,classes=log_reg.classes_, title='Confusion Matrix')
+plot_confusion_matrix(cm=cm_norm,classes=log_reg.classes_, title='Confusion Matrix')
 
 # Calculating False Positives (FP), False Negatives (FN), True Positives (TP) & True Negatives (TN)
 
@@ -508,7 +508,7 @@ df_outcomes = pd.DataFrame(outcomes, columns=["C_List", 'CA2','Logarithmic_Loss2
 #Ordering the data (sort values)
 df_outcomes = df_outcomes.sort_values("Logarithmic_Loss2", ascending=True)
 
-#print(df_outcomes)
+print(df_outcomes)
 
 
 
@@ -549,7 +549,7 @@ Logaritmic_Loss.append(log_loss2)
 
 # FINAL MODEL WITH SELECTED PARAMETERS
 
-log_reg3 = LogisticRegression(random_state=10,solver='lbfgs',C=6.158482)
+log_reg3 = LogisticRegression(random_state=10,solver='lbfgs',C=0.048329)
 log_reg3.fit(X_resampled, y_resampled)
 score = log_reg3.score(X_resampled, y_resampled)
 
