@@ -368,18 +368,18 @@ def plot_Accuracy(Y, X, Yerr, x_label, x_lim, model_type,dataset_title):
 
 # Method for selecting C Values
 def select_C(X, y, c_values,model_type,dataset_title,x_lim):
-    
+
     logistic_loss = []; mean_error=[]; std_error=[]  # initalizing arrays
     kf = KFold(n_splits = 5,random_state = 0, shuffle=True)
-       
+
     #Loop through each k fold
     for c in c_values:
-        temp1 = [] 
+        temp1 = []
         temp3 = []
         model = LogisticRegression(random_state=10, solver='lbfgs', C=c,max_iter=10000)
-                
+
         for train, test in kf.split(X):
-            
+
             model.fit(X[train], y[train])
             ypred = model.predict(X[test])
             score = accuracy_score(y[test], ypred)
@@ -387,15 +387,15 @@ def select_C(X, y, c_values,model_type,dataset_title,x_lim):
             loss = log_loss(y[test],pred_proba_t)
             temp1.append(score)
             temp3.append(loss)
-        
+
         #Get mean & variance
         mean_error.append(np.array(temp1).mean())
-        std_error.append(np.array(temp1).std())    
-        logistic_loss.append(np.array(temp3).mean())    
-        
+        std_error.append(np.array(temp1).std())
+        logistic_loss.append(np.array(temp3).mean())
+
     #Plot
     x_label = "Range of C Values"
-    plot_Accuracy(c_values, mean_error, std_error, x_label, x_lim, model_type,dataset_title)   
+    plot_Accuracy(c_values, mean_error, std_error, x_label, x_lim, model_type,dataset_title)
     df = pd.DataFrame({'C':c_values,'mean_error':mean_error,'std_error':std_error,'logistic_loss':logistic_loss})
     return df
 
@@ -439,57 +439,57 @@ plot_confusion_matrix(cm=conf_matrix_logistic_test_norm,classes=['Refused','Gran
 
 #------- KNN CLASSIFIER -----------
 # =============================================================================
-# 
-# 
-# 
-# 
-# 
+#
+#
+#
+#
+#
 
-# # 
+# #
 # def select_k(X,y,k_values,dataset_title):
-        
+
 #     mean_error=[]; std_error=[]  # initalizing arrays
 #     kf = KFold(n_splits = 5)
-        
+
 #     #Loop through each k fold
 #     for k in k_values:
-#         temp = [] 
+#         temp = []
 #         model = KNeighborsClassifier(n_neighbors = k, weights= 'uniform')
-                
+
 #         for train, test in kf.split(X):
-            
+
 #             model.fit(X[train], y[train])
 #             ypred = model.predict(X[test])
 #             score = accuracy_score(y[test], ypred)
 #             temp.append(score)
-        
+
 #         #Get mean & variance
 #         mean_error.append(np.array(temp).mean())
-#         std_error.append(np.array(temp).std())    
-        
+#         std_error.append(np.array(temp).std())
+
 #     #Plot
 #     x_label = "Range of K Values"
 #     model_type = "K Neighbour Classifier"
-#     plot_Accuracy(k_values, mean_error, std_error, x_label, model_type, dataset_title) 
-    
+#     plot_Accuracy(k_values, mean_error, std_error, x_label, model_type, dataset_title)
+
 # K_values_narrow = [5,10,15]
 # select_k(X_resampled,y_resampled,K_values_narrow,'Selecting Best K')
-# # 
-# 
-# 
-# mean_score = []
-# std_score = []
-# 
-# for K in range(2,10):
-#   clf = KNeighborsClassifier(n_neighbors=K)
-#   clf.fit(X_resampled,y_resampled)
-#   scores = cross_val_score(clf, X_train, y_train, cv=5)
-#   mean_score.append(scores.mean()*100)
-#   std_score.append(scores.std()*100)
-#   y_pred = clf.predict(X_resampled)
-#   print("Score",round(scores.mean(),3))
-#   print("Score",round((y_pred==y_test.values).sum()/y_pred.shape[0],3))
-# 
+# #
+#
+#
+mean_score = []
+std_score = []
+ 
+for K in range(2,10):
+    clf = KNeighborsClassifier(n_neighbors=K)
+    clf.fit(X_resampled,y_resampled)
+    scores = cross_val_score(clf, X_train, y_train, cv=5)
+    mean_score.append(scores.mean()*100)
+    std_score.append(scores.std()*100)
+    y_pred = clf.predict(X_resampled)
+    print("Score",round(scores.mean(),3))
+    print("Score",round((y_pred==y_test.values).sum()/y_pred.shape[0],3))
+#
 # =============================================================================
 # FINAL MODEL WITH SELECTED PARAMETERS
 
@@ -610,4 +610,3 @@ accuracyScores = [accuracy_logistic,accuracy_knn,accuracy_dummy1,accuracy_dummy2
 modelNames = ['accuracy_logistic','accuracy_knn','accuracy_dummy1','accuracy_dummy2']
 
 accuracyTable = pd.DataFrame([modelNames,accuracyScores])
-
